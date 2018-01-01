@@ -10,6 +10,7 @@ import textwrap
 import time
 import traceback
 from typing import List
+from discord import Forbidden
 
 import inflect
 
@@ -56,6 +57,11 @@ async def handle_command(message, bot):
                 await method(Commands, bot)
             elif method.__code__.co_argcount == 1:
                 await method(Commands)
+            if get_attr(method, "delete_trigger", False):
+                try:
+                    await bot.client.delete_message(message)
+                except Forbidden:
+                    pass
         except Exception as e: # pylint: disable=broad-except
             print('Caught exception processing command `{cmd}`'.format(cmd=message.content))
             tb = traceback.format_exc()
@@ -113,7 +119,11 @@ def cmd_header(group):
         return func
     return decorator
 
-
+def delete_trigger():
+    def decorator(func):
+        setattr(func, "delete_trigger", True)
+        return func
+    return decorator
 
 # pylint: disable=too-many-public-methods
 class Commands:
@@ -265,6 +275,7 @@ Want to contribute? Send a Pull Request."""
         await single_card_text(bot, channel, args, author, oracle_text)
 
     @cmd_header('Commands')
+    @delete_trigger
     async def price(self, bot, channel, args, author):
         """`!price {name}` Get price information about the named card."""
         await single_card_text(bot, channel, args, author, fetcher.card_price_string)
@@ -600,7 +611,7 @@ async def single_card_text(bot, channel, args, author, f):
     elif len(cards) == 1:
         legal_emjoi = emoji.legal_emoji(cards[0])
         text = emoji.replace_emoji(f(cards[0]), bot.client)
-        message = '**{name}** {legal_emjoi} {text}'.format(name=cards[0].name, legal_emjoi=legal_emjoi, text=text)
+        message = '{author}: **{name}** {legal_emjoi} {text}'.format(author=author.mention, name=cards[0].name, legal_emjoi=legal_emjoi, text=text)
         await bot.client.send_message(channel, message)
     else:
         await bot.client.send_message(channel, '{author}: No matches.'.format(author=author.mention))
