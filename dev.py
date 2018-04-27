@@ -38,7 +38,7 @@ def mypy() -> None:
     args = [
         '--ignore-missing-imports',     # Don't complain about 3rd party libs with no stubs
         '--disallow-untyped-calls',     # Strict Mode.  All function calls must have a return type.
-        # "--disallow-incomplete-defs", # All parameters must have type definitions.
+        '--disallow-incomplete-defs',   # All parameters must have type definitions.
         ]
     args.extend(sys.argv[2:] or [
         '.'                             # Invoke on the entire project.
